@@ -27,7 +27,7 @@ from random import randint, seed
 
 parser = argparse.ArgumentParser(description="FIXBI EXPERIMENTS")
 parser.add_argument('-db_path', help='gpu number', type=str, default='datasets')
-parser.add_argument('-save_path', help='save path', type=str, default='Logs/save_test')
+parser.add_argument('-save_path', help='save path', type=str, default='Logs/save_test/lr_ratio')
 parser.add_argument('-source', help='source', type=str, default='webcam')
 parser.add_argument('-target', help='target', type=str, default='amazon')
 parser.add_argument('-workers', default=4, type=int, help='dataloader workers')
@@ -50,9 +50,9 @@ def main():
     net_sd, head_sd, classifier_sd = utils.get_net_info(num_classes)
     net_td, head_td, classifier_td = utils.get_net_info(num_classes)
 
-    for src,tgt in [("webcam","amazon")]:#,("amazon","webcam"),("webcam","dslr"),("dslr","webcam")]:
-        args.source = src
-        args.target = tgt
+    for k in [1,0.01]:#,("amazon","webcam"),("webcam","dslr"),("dslr","webcam")]:
+        # args.source = src
+        # args.target = tgt
         print(args.source,args.target)
 
         src_trainset, src_testset = get_dataset(args.source, path=args.db_path)
@@ -61,12 +61,12 @@ def main():
         src_train_loader1 = torchdata.DataLoader(src_trainset, batch_size=args.batch_size, shuffle=False, num_workers=args.workers, pin_memory=True, drop_last=False)
         tgt_train_loader1 = torchdata.DataLoader(tgt_trainset, batch_size=args.batch_size,shuffle=False, num_workers=args.workers, pin_memory=True, drop_last=False)
 
-        net_sd, head_sd, classifier_sd = utils.load_net(args, 'sdm4', net_sd, head_sd, classifier_sd)
-        net_td, head_td, classifier_td = utils.load_net(args, 'tdm4', net_td, head_td, classifier_td)
+        net_sd, head_sd, classifier_sd = utils.load_net(args, 'sdm_epoch120_'+str(k), net_sd, head_sd, classifier_sd)
+        net_td, head_td, classifier_td = utils.load_net(args, 'tdm_epoch120_'+str(k), net_td, head_td, classifier_td)
         models_sd = [net_sd, head_sd, classifier_sd]
         models_td = [net_td, head_td, classifier_td]
 
-        for l,loader in [('src',src_train_loader1),('tgt',tgt_train_loader1),]: #
+        for l,loader in [('tgt',tgt_train_loader1),]: #('src',src_train_loader1),
 
             #for m,modelx in [('sdm',models_sd),('tdm',models_td),]: #
             model = nn.Sequential(*models_sd[:-1])
@@ -96,7 +96,7 @@ def main():
 
             # tsne_proj = PCA(n_components=0.9).fit_transform(X.numpy())
             # print(np.shape(tsne_proj))
-            print("src:",src,"tgt:",tgt,"dataset:",l)
+            print("src:",args.source,"tgt:",args.target,"lr_ratio:",k)
             utils.final_eval(nn.Sequential(*models_sd), nn.Sequential(*models_td), loader, args.met_file)
             tsne_proj = TSNE(2, perplexity=30, learning_rate=200, verbose=1).fit_transform(X1.numpy())
             Y = Y.numpy().astype(int)
@@ -105,7 +105,7 @@ def main():
             df["comp-1"] = tsne_proj[:,0]
             df["comp-2"] = tsne_proj[:,1]
             df.plot.scatter(x="comp-1", y="comp-2", s=20, c=color[Y])
-            plt.savefig(src+'-'+tgt+' '+'final_'+str(l)+'.png')
+            plt.savefig(str(k)+' '+'final_'+str(l)+'.png')
             plt.show()
 
 main()

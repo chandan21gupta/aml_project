@@ -61,7 +61,7 @@ def train_fixbi(args, loaders, optimizers, schedulers, models_sd, models_td, sp_
                     b_sd_loss = ce(x_sd[bim_mask_td[:bim_mask]], pseudo_td[bim_mask_td[:bim_mask]].cuda().detach())
                     b_td_loss = ce(x_td[bim_mask_sd[:bim_mask]], pseudo_sd[bim_mask_sd[:bim_mask]].cuda().detach())
 
-                    total_loss += lr_ratio*(b_sd_loss + b_td_loss)
+                    total_loss += (b_sd_loss + b_td_loss)*lr_ratio
 
                     bim_sd_loss += b_sd_loss
                     bim_td_loss += b_td_loss
@@ -90,7 +90,7 @@ def train_fixbi(args, loaders, optimizers, schedulers, models_sd, models_td, sp_
             mixed_cr = 0.5 * src_imgs + 0.5 * tgt_imgs
             out_sd, out_td = models_sd(mixed_cr), models_td(mixed_cr)
             cr_loss = mse(out_sd, out_td)
-            total_loss += lr_ratio*cr_loss
+            total_loss += cr_loss*lr_ratio
             tcr_loss += cr_loss
 
         optimizer_sd.zero_grad()

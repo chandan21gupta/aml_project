@@ -56,12 +56,12 @@ def main():
     lr, l2_decay, momentum, nesterov = utils.get_train_info()
     lambda1 = lambda epoch: 1/((1 + 10*epoch/args.epochs)**0.75)    
 
-    for lr_ratio in [0.1]:
+    for k in [0.01]:
 
         net_sd, head_sd, classifier_sd = utils.get_net_info(num_classes)
         net_td, head_td, classifier_td = utils.get_net_info(num_classes)
-        net_sd, head_sd, classifier_sd = utils.load_net(args, 'sdm_epoch100', net_sd, head_sd, classifier_sd)
-        net_td, head_td, classifier_td = utils.load_net(args, 'tdm_epoch100', net_td, head_td, classifier_td)
+        net_sd, head_sd, classifier_sd = utils.load_net(args, 'sdm_epoch120_'+str(k), net_sd, head_sd, classifier_sd)
+        net_td, head_td, classifier_td = utils.load_net(args, 'tdm_epoch120_'+str(k), net_td, head_td, classifier_td)
         
         learnable_params_sd = list(net_sd.parameters()) + list(head_sd.parameters()) + list(classifier_sd.parameters())
         learnable_params_td = list(net_td.parameters()) + list(head_td.parameters()) + list(classifier_td.parameters())
@@ -84,7 +84,7 @@ def main():
         mse = nn.MSELoss().cuda()
         
         loaders = [src_train_loader1, tgt_train_loader1, src_train_loader2, tgt_train_loader2]
-        optimizers = [optimizer_sd, optimizer_td, lr_ratio]
+        optimizers = [optimizer_sd, optimizer_td, k]
         schedulers = [scheduler_sd,scheduler_td]
         sp_params = [sp_param_sd, sp_param_td]  
         losses = [ce, mse]
@@ -98,9 +98,9 @@ def main():
 
         p3.append(utils.evaluate(nn.Sequential(*models_sd), tgt_test_loader, args.met_file))
         p4.append(utils.evaluate(nn.Sequential(*models_td), tgt_test_loader, args.met_file))
-        p2.append(utils.final_eval(nn.Sequential(*models_sd), nn.Sequential(*models_td), tgt_test_loader, args.met_file))
+        f2.append(utils.final_eval(nn.Sequential(*models_sd), nn.Sequential(*models_td), tgt_test_loader, args.met_file))
 
-        for epoch in range(100,120):
+        for epoch in range(120,150):
             train_fixbi(args, loaders, optimizers, schedulers, models_sd, models_td, sp_params, losses, epoch, args.met_file)
             
             p1.append(utils.evaluate(nn.Sequential(*models_sd), src_train_loader1, args.met_file))
@@ -115,31 +115,31 @@ def main():
                 utils.save_net(args, models_sd, 'sdm_epoch100')
                 utils.save_net(args, models_td, 'tdm_epoch100')
             else:
-                utils.save_net(args, models_sd, 'sdm_epoch120_'+str(lr_ratio))
-                utils.save_net(args, models_td, 'tdm_epoch120_'+str(lr_ratio))
+                utils.save_net(args, models_sd, 'sdm_epoch150')
+                utils.save_net(args, models_td, 'tdm_epoch150')
 
-        print(f1)
-        print(f2)
         print(p1)
         print(p2)
+        print(f1+'\n')
         print(p3)
         print(p4)
+        print(f2)
 
-        x = range(100,121)
-        plt.plot(x,p1,color='red',label='SDM Accuracy on Source Dataset')
-        plt.plot(x,p2,color='blue',label='TDM Accuracy on Source Dataset')
-        plt.plot(x,p3,color='cyan',label='SDM Accuracy on Target Dataset')
-        plt.plot(x,p4,color='green',label='TDM Accuracy on Target Dataset')
-        plt.xlabel("Epochs")
-        plt.ylabel("Accuracy")
-        plt.legend()
-        plt.savefig(s+'_'+t+'_lr_ratio_'+lr_ratio+'training_plot.png')
+    # x = range(0,101)
+    # plt.plot(x,p1,color='red',label='SDM Accuracy on Source Dataset')
+    # plt.plot(x,p2,color='blue',label='TDM Accuracy on Source Dataset')
+    # plt.plot(x,p3,color='cyan',label='SDM Accuracy on Target Dataset')
+    # plt.plot(x,p4,color='green',label='TDM Accuracy on Target Dataset')
+    # plt.xlabel("Epochs")
+    # plt.ylabel("Accuracy")
+    # plt.legend()
+    # plt.savefig(s+'_'+t+'_lr_ratio_'+lr_ratio+'training_plot.png')
 
-        plt.plot(x,f1,color='red',label='Final Accuracy on Source Dataset')
-        plt.plot(x,f2,color='green',label='Final Accuracy on Target Dataset')
-        plt.xlabel("Epochs")
-        plt.ylabel("Accuracy")
-        plt.legend()
-        plt.savefig(s+'_'+t+'final_lr_ratio_'+lr_ratio+'training_plot.png')
+    # plt.plot(x,f1,color='red',label='Final Accuracy on Source Dataset')
+    # plt.plot(x,f2,color='green',label='Final Accuracy on Target Dataset')
+    # plt.xlabel("Epochs")
+    # plt.ylabel("Accuracy")
+    # plt.legend()
+    # plt.savefig(s+'_'+t+'final_lr_ratio_'+lr_ratio+'training_plot.png')
 
 main()

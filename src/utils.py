@@ -23,7 +23,7 @@ def get_net_info(num_classes):
     return net, head, classifier
 
 def get_train_info():
-    lr = 0.001
+    lr = 0.0003
     l2_decay = 0.005
     momentum = 0.9
     nesterov = False
